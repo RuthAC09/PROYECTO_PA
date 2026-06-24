@@ -225,8 +225,8 @@ else:
                     label=f"Año Crítico Máximo ({anio_max})",
                     value=f"{valor_max:.3f} Hag"
                 )
-else:
-    st.warning("No se pudieron calcular los indicadores históricos porque la columna 'Valor' quedó vacía o con datos no válidos.")
+        else:
+            st.warning("No se pudieron calcular los indicadores históricos porque la columna 'Valor' quedó vacía o con datos no válidos.")
 
         st.markdown("---")
         col_grafica, col_info_tabla = st.columns([1.1, 1])
