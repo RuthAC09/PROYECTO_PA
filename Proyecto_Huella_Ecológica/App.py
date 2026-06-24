@@ -50,8 +50,16 @@ def limpiar_texto(texto):
 # =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    archivos_csv = glob.glob("*.csv")
+    # 1. Obtener la ruta absoluta de la carpeta donde reside App.py
+    ruta_script = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Construir el patrón de búsqueda apuntando explícitamente a esa carpeta
+    patron_csv = os.path.join(ruta_script, "*.csv")
+    archivos_csv = glob.glob(patron_csv)
+    
     if not archivos_csv:
+        # Mensaje de diagnóstico por si ocurre algo inesperado en el servidor
+        st.sidebar.error(f"⚠️ No se encontraron archivos .csv en: {ruta_script}")
         return None
         
     datos_historicos = []
@@ -132,11 +140,6 @@ def cargar_datos_detallados():
     if not datos_historicos:
         return None
     return pd.concat(datos_historicos, ignore_index=True)
-
-df_completo = cargar_datos_detallados()
-
-if df_completo is not None and not df_completo.empty:
-    df_completo = df_completo[df_completo['Región Natural'].notna()]
 
 # =====================================================================
 # 4. MENÚ LATERAL INTERACTIVO
