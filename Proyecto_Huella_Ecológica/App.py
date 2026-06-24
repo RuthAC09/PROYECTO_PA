@@ -52,6 +52,7 @@ def limpiar_texto(texto):
 def cargar_datos_detallados():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     archivos_csv = glob.glob(os.path.join(BASE_DIR, "*.csv"))
+    
     if not archivos_csv:
         return None
         
@@ -79,7 +80,6 @@ def cargar_datos_detallados():
         if df.empty:
             continue
             
-        # Forzar el nombre de la primera columna a 'Ámbito'
         if 'Ámbito' not in df.columns:
             df.rename(columns={df.columns[0]: 'Ámbito'}, inplace=True)
             
@@ -88,7 +88,6 @@ def cargar_datos_detallados():
         df = df[~df['Ámbito'].str.contains(r'\(Hag\)|HAG|TOTAL', case=False, na=False)]
         df = df[df['Ámbito'] != '']
 
-        # Mapeo estricto para unificar columnas duplicadas
         nuevos_columnas = {}
         for col in df.columns:
             if col == 'Ámbito':
@@ -122,7 +121,6 @@ def cargar_datos_detallados():
         
         df = df.groupby('Ámbito', as_index=False).first()
         
-        # Adaptación para compatibilidad entre las secciones antiguas y nuevas
         df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
         df['Valor'] = df['Huella Regional Per Capita'] if 'Huella Regional Per Capita' in df.columns else df.iloc[:, 1]
         df['Año'] = anio
@@ -132,6 +130,7 @@ def cargar_datos_detallados():
         
     if not datos_historicos:
         return None
+        
     return pd.concat(datos_historicos, ignore_index=True)
 
 df_completo = cargar_datos_detallados()
