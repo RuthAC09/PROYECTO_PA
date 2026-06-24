@@ -1,6 +1,4 @@
 matplotlib
 plotly
-os
-glob
 streamlit
 pandas
