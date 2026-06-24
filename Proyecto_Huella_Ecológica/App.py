@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import glob
 import streamlit as st
+import plotly.express as px
 import matplotlib.pyplot as plt
 
 # =====================================================================
