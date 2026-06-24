@@ -50,9 +50,7 @@ def limpiar_texto(texto):
 # =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    archivos_csv = glob.glob(os.path.join(BASE_DIR, "*.csv"))
-    
+    archivos_csv = glob.glob("*.csv")
     if not archivos_csv:
         return None
         
@@ -80,6 +78,7 @@ def cargar_datos_detallados():
         if df.empty:
             continue
             
+        # Forzar el nombre de la primera columna a 'Ámbito'
         if 'Ámbito' not in df.columns:
             df.rename(columns={df.columns[0]: 'Ámbito'}, inplace=True)
             
@@ -88,6 +87,7 @@ def cargar_datos_detallados():
         df = df[~df['Ámbito'].str.contains(r'\(Hag\)|HAG|TOTAL', case=False, na=False)]
         df = df[df['Ámbito'] != '']
 
+        # Mapeo estricto para unificar columnas duplicadas
         nuevos_columnas = {}
         for col in df.columns:
             if col == 'Ámbito':
@@ -121,6 +121,7 @@ def cargar_datos_detallados():
         
         df = df.groupby('Ámbito', as_index=False).first()
         
+        # Adaptación para compatibilidad entre las secciones antiguas y nuevas
         df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
         df['Valor'] = df['Huella Regional Per Capita'] if 'Huella Regional Per Capita' in df.columns else df.iloc[:, 1]
         df['Año'] = anio
@@ -130,7 +131,6 @@ def cargar_datos_detallados():
         
     if not datos_historicos:
         return None
-        
     return pd.concat(datos_historicos, ignore_index=True)
 
 df_completo = cargar_datos_detallados()
@@ -189,44 +189,21 @@ else:
         
         df_historico_nacional = df_completo.groupby("Año", as_index=False)["Valor"].mean()
         df_historico_nacional.rename(columns={"Valor": "Huella Promedio Nacional (Hag)"}, inplace=True)
-
-        # Eliminar filas donde el valor sea NaN
-        df_historico_nacional = df_historico_nacional.dropna(subset=["Huella Promedio Nacional (Hag)"])
         
         if not df_historico_nacional.empty:
             df_historico_nacional = df_historico_nacional.sort_values(by="Año")
-        
             huella_inicial = df_historico_nacional.iloc[0]["Huella Promedio Nacional (Hag)"]
             huella_final = df_historico_nacional.iloc[-1]["Huella Promedio Nacional (Hag)"]
             diferencia_historica = huella_final - huella_inicial
-        
+            
             c1, c2, c3 = st.columns(3)
-        
             with c1:
-                st.metric(
-                    label=f"Huella Inicial ({int(df_historico_nacional.iloc[0]['Año'])})",
-                    value=f"{huella_inicial:.3f} Hag"
-                )
-        
+                st.metric(label="Huella Inicial (2009)", value=f"{huella_inicial:.3f} Hag")
             with c2:
-                st.metric(
-                    label=f"Huella Final ({int(df_historico_nacional.iloc[-1]['Año'])})",
-                    value=f"{huella_final:.3f} Hag",
-                    delta=f"{diferencia_historica:+.3f} Hag",
-                    delta_color="inverse"
-                )
-        
+                st.metric(label="Huella Final (2016)", value=f"{huella_final:.3f} Hag", delta=f"{diferencia_historica:+.3f} Hag", delta_color="inverse")
             with c3:
                 idx_max = df_historico_nacional["Huella Promedio Nacional (Hag)"].idxmax()
-                anio_max = int(df_historico_nacional.loc[idx_max, "Año"])
-                valor_max = df_historico_nacional.loc[idx_max, "Huella Promedio Nacional (Hag)"]
-        
-                st.metric(
-                    label=f"Año Crítico Máximo ({anio_max})",
-                    value=f"{valor_max:.3f} Hag"
-                )
-        else:
-            st.warning("No se pudieron calcular los indicadores históricos porque la columna 'Valor' quedó vacía o con datos no válidos.")
+                st.metric(label=f"Año Crítico Máximo ({df_historico_nacional.loc[idx_max, 'Año']})", value=f"{df_historico_nacional.loc[idx_max, 'Huella Promedio Nacional (Hag)']:.3f} Hag")
 
         st.markdown("---")
         col_grafica, col_info_tabla = st.columns([1.1, 1])
