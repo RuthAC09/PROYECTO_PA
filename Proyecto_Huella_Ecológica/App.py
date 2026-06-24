@@ -140,6 +140,20 @@ def cargar_datos_detallados():
     if not datos_historicos:
         return None
     return pd.concat(datos_historicos, ignore_index=True)
+# =====================================================================
+# 3.5 EJECUCIÓN DE LA CARGA Y CONTROL DE ERRORES
+# =====================================================================
+# Inicializamos la variable como None por seguridad para evitar el NameError
+df_completo = None
+
+try:
+    df_completo = cargar_datos_detallados()
+except Exception as e:
+    st.sidebar.error(f"❌ Error crítico al invocar la función de carga: {e}")
+
+# Solo filtramos si el DataFrame se creó y no está vacío
+if df_completo is not None and not df_completo.empty:
+    df_completo = df_completo[df_completo['Región Natural'].notna()]
 
 # =====================================================================
 # 4. MENÚ LATERAL INTERACTIVO
