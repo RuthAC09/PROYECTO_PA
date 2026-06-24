@@ -2,3 +2,5 @@ matplotlib.pyplot
 plotly.express
 os
 glob
+streamlit
+pandas
