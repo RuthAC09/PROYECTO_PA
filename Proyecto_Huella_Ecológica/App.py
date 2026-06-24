@@ -50,7 +50,8 @@ def limpiar_texto(texto):
 # =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    archivos_csv = glob.glob("*.csv")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    archivos_csv = glob.glob(os.path.join(BASE_DIR, "*.csv"))
     if not archivos_csv:
         return None
         
