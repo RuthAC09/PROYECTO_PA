@@ -189,21 +189,44 @@ else:
         
         df_historico_nacional = df_completo.groupby("Año", as_index=False)["Valor"].mean()
         df_historico_nacional.rename(columns={"Valor": "Huella Promedio Nacional (Hag)"}, inplace=True)
+
+        # Eliminar filas donde el valor sea NaN
+        df_historico_nacional = df_historico_nacional.dropna(subset=["Huella Promedio Nacional (Hag)"])
         
         if not df_historico_nacional.empty:
             df_historico_nacional = df_historico_nacional.sort_values(by="Año")
+        
             huella_inicial = df_historico_nacional.iloc[0]["Huella Promedio Nacional (Hag)"]
             huella_final = df_historico_nacional.iloc[-1]["Huella Promedio Nacional (Hag)"]
             diferencia_historica = huella_final - huella_inicial
-            
+        
             c1, c2, c3 = st.columns(3)
+        
             with c1:
-                st.metric(label="Huella Inicial (2009)", value=f"{huella_inicial:.3f} Hag")
+                st.metric(
+                    label=f"Huella Inicial ({int(df_historico_nacional.iloc[0]['Año'])})",
+                    value=f"{huella_inicial:.3f} Hag"
+                )
+        
             with c2:
-                st.metric(label="Huella Final (2016)", value=f"{huella_final:.3f} Hag", delta=f"{diferencia_historica:+.3f} Hag", delta_color="inverse")
+                st.metric(
+                    label=f"Huella Final ({int(df_historico_nacional.iloc[-1]['Año'])})",
+                    value=f"{huella_final:.3f} Hag",
+                    delta=f"{diferencia_historica:+.3f} Hag",
+                    delta_color="inverse"
+                )
+        
             with c3:
                 idx_max = df_historico_nacional["Huella Promedio Nacional (Hag)"].idxmax()
-                st.metric(label=f"Año Crítico Máximo ({df_historico_nacional.loc[idx_max, 'Año']})", value=f"{df_historico_nacional.loc[idx_max, 'Huella Promedio Nacional (Hag)']:.3f} Hag")
+                anio_max = int(df_historico_nacional.loc[idx_max, "Año"])
+                valor_max = df_historico_nacional.loc[idx_max, "Huella Promedio Nacional (Hag)"]
+        
+                st.metric(
+                    label=f"Año Crítico Máximo ({anio_max})",
+                    value=f"{valor_max:.3f} Hag"
+                )
+else:
+    st.warning("No se pudieron calcular los indicadores históricos porque la columna 'Valor' quedó vacía o con datos no válidos.")
 
         st.markdown("---")
         col_grafica, col_info_tabla = st.columns([1.1, 1])
