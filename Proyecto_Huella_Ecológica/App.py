@@ -12,7 +12,7 @@ st.set_page_config(
 # 2. Función para cargar los archivos de manera optimizada y tolerante
 @st.cache_data
 def cargar_datos_anio(nombre_archivo):
-    carpeta_datos = r"C:\Users\Ryzen 5\Desktop\Mi Carpeta\UPCH\2026-1 UPCH\Programacion avanzada\Proyecto\Proyecto_Huella_Ecológica\data"
+    carpeta_datos = r"Proyecto_Huella_Ecológica/data"
     
     posibles_rutas = [
         os.path.join(carpeta_datos, nombre_archivo),
