@@ -370,7 +370,7 @@ else:
     # NUEVA INTEGRACIÓN --- SECCIÓN 4: VISUALIZACIÓN AVANZADA DE DATOS ---
     # =====================================================================
     elif seccion == "Visualización Avanzada de Datos":
-        st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2026)")
+        st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2016)")
         st.write("Analiza y compara la evolución de la huella regional per cápita y sus componentes.")
         
         st.markdown("### 🛠️ Parámetros de Selección")
