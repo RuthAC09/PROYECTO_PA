@@ -50,8 +50,12 @@ def limpiar_texto(texto):
 # =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    archivos_csv = glob.glob("*.csv")
+    ruta_script = os.path.dirname(os.path.abspath(__file__))
+    patron_csv = os.path.join(ruta_script, "*.csv")
+    archivos_csv = glob.glob(patron_csv)
+    
     if not archivos_csv:
+        st.sidebar.error(f"⚠️ No se encontraron archivos .csv en: {ruta_script}")
         return None
         
     datos_historicos = []
@@ -113,28 +117,49 @@ def cargar_datos_detallados():
         df_columnas_validas = ['Ámbito'] + [c for c in nuevos_columnas.values() if c in df.columns]
         df = df[df_columnas_validas].copy()
         
+        # --- LIMPIEZA NUMÉRICA MEJORADA ---
         for col in df.columns:
             if col != 'Ámbito':
-                if df[col].dtype == 'object':
-                    df[col] = df[col].astype(str).str.replace(',', '.', regex=False).str.strip()
+                # Convertimos a string, eliminamos espacios raros y homogeneizamos la coma decimal
+                df[col] = df[col].astype(str).str.replace(r'[^\d.,-]', '', regex=True).str.strip()
+                df[col] = df[col].str.replace(',', '.', regex=False)
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
         df = df.groupby('Ámbito', as_index=False).first()
         
-        # Adaptación para compatibilidad entre las secciones antiguas y nuevas
         df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
-        df['Valor'] = df['Huella Regional Per Capita'] if 'Huella Regional Per Capita' in df.columns else df.iloc[:, 1]
+        
+        # Asignación segura del Valor
+        if 'Huella Regional Per Capita' in df.columns:
+            df['Valor'] = df['Huella Regional Per Capita']
+        elif len(df.columns) >  1:
+            # Si no encontró la columna por nombre, toma la primera numérica disponible
+            df['Valor'] = df.iloc[:, 1]
+        else:
+            df['Valor'] = np.nan
+
         df['Año'] = anio
         df['Región Natural'] = df['Departamento'].map(REGIONES_PERU)
         
-        datos_historicos.append(df)
+        # Solo agregar si al menos logramos rescatar números en 'Valor'
+        if not df['Valor'].isna().all():
+            datos_historicos.append(df)
         
     if not datos_historicos:
         return None
     return pd.concat(datos_historicos, ignore_index=True)
+# =====================================================================
+# 3.5 EJECUCIÓN DE LA CARGA Y CONTROL DE ERRORES
+# =====================================================================
+# Inicializamos la variable como None por seguridad para evitar el NameError
+df_completo = None
 
-df_completo = cargar_datos_detallados()
+try:
+    df_completo = cargar_datos_detallados()
+except Exception as e:
+    st.sidebar.error(f"❌ Error crítico al invocar la función de carga: {e}")
 
+# Solo filtramos si el DataFrame se creó y no está vacío
 if df_completo is not None and not df_completo.empty:
     df_completo = df_completo[df_completo['Región Natural'].notna()]
 
