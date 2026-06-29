@@ -7,26 +7,11 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Huella Ecológica Regional - MINAM", page_icon="🌱", layout="wide")
 
-# =====================================================================
-# 2. DICCIONARIOS Y FUNCIONES DE SOPORTE
-# =====================================================================
-# Sin Callao por no ser departamento conforme a lo solicitado
-REGIONES_PERU = {
-    # COSTA
-    'TUMBES': 'Costa', 'PIURA': 'Costa', 'LAMBAYEQUE': 'Costa', 
-    'LA LIBERTAD': 'Costa', 'ANCASH': 'Costa', 'LIMA': 'Costa', 
-    'ICA': 'Costa', 'AREQUIPA': 'Costa', 'MOQUEGUA': 'Costa', 
-    'TACNA': 'Costa',
-    
-    # SIERRA
-    'CAJAMARCA': 'Sierra', 'PASCO': 'Sierra', 'JUNIN': 'Sierra', 
-    'HUANUCO': 'Sierra', 'HUANCAVELICA': 'Sierra', 'AYACUCHO': 'Sierra', 
-    'APURIMAC': 'Sierra', 'CUSCO': 'Sierra', 'PUNO': 'Sierra',
-    
-    # SELVA
-    'LORETO': 'Selva', 'AMAZONAS': 'Selva', 'SAN MARTIN': 'Selva', 
-    'UCAYALI': 'Selva', 'MADRE DE DIOS': 'Selva'
-}
+REGIONES_PERU = {'TUMBES': 'Costa', 'PIURA': 'Costa', 'LAMBAYEQUE': 'Costa', 'LA LIBERTAD': 'Costa', 'ANCASH': 'Costa',
+                 'LIMA': 'Costa', 'ICA': 'Costa', 'AREQUIPA': 'Costa', 'MOQUEGUA': 'Costa', 'TACNA': 'Costa', 'CAJAMARCA': 'Sierra',
+                 'PASCO': 'Sierra', 'JUNIN': 'Sierra', 'HUANUCO': 'Sierra', 'HUANCAVELICA': 'Sierra', 'AYACUCHO': 'Sierra',
+                 'APURIMAC': 'Sierra', 'CUSCO': 'Sierra', 'PUNO': 'Sierra', 'LORETO': 'Selva', 'AMAZONAS': 'Selva', 'SAN MARTIN': 'Selva',
+                 'UCAYALI': 'Selva', 'MADRE DE DIOS': 'Selva'}
 
 def limpiar_texto(texto):
     if pd.isna(texto):
@@ -38,9 +23,6 @@ def limpiar_texto(texto):
         texto = texto.replace(original, reemplazo)
     return texto
 
-# =====================================================================
-# 3. CARGA Y CONSOLIDACIÓN DE DATOS REFORZADA (CACHEADA)
-# =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
     ruta_script = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +57,6 @@ def cargar_datos_detallados():
         if df.empty:
             continue
             
-        # Forzar el nombre de la primera columna a 'Ámbito'
         if 'Ámbito' not in df.columns:
             df.rename(columns={df.columns[0]: 'Ámbito'}, inplace=True)
             
@@ -84,7 +65,6 @@ def cargar_datos_detallados():
         df = df[~df['Ámbito'].str.contains(r'\(Hag\)|HAG|TOTAL', case=False, na=False)]
         df = df[df['Ámbito'] != '']
 
-        # Mapeo estricto para unificar columnas duplicadas
         nuevos_columnas = {}
         for col in df.columns:
             if col == 'Ámbito':
@@ -110,7 +90,6 @@ def cargar_datos_detallados():
         df_columnas_validas = ['Ámbito'] + [c for c in nuevos_columnas.values() if c in df.columns]
         df = df[df_columnas_validas].copy()
         
-        # --- LIMPIEZA NUMÉRICA MEJORADA ---
         for col in df.columns:
             if col != 'Ámbito':
                 # Convertimos a string, eliminamos espacios raros y homogeneizamos la coma decimal
@@ -122,7 +101,6 @@ def cargar_datos_detallados():
         
         df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
         
-        # Asignación segura del Valor
         if 'Huella Regional Per Capita' in df.columns:
             df['Valor'] = df['Huella Regional Per Capita']
         elif len(df.columns) >  1:
@@ -134,17 +112,13 @@ def cargar_datos_detallados():
         df['Año'] = anio
         df['Región Natural'] = df['Departamento'].map(REGIONES_PERU)
         
-        # Solo agregar si al menos logramos rescatar números en 'Valor'
         if not df['Valor'].isna().all():
             datos_historicos.append(df)
         
     if not datos_historicos:
         return None
     return pd.concat(datos_historicos, ignore_index=True)
-# =====================================================================
-# 3.5 EJECUCIÓN DE LA CARGA Y CONTROL DE ERRORES
-# =====================================================================
-# Inicializamos la variable como None por seguridad para evitar el NameError
+
 df_completo = None
 
 try:
@@ -152,30 +126,23 @@ try:
 except Exception as e:
     st.sidebar.error(f"❌ Error crítico al invocar la función de carga: {e}")
 
-# Solo filtramos si el DataFrame se creó y no está vacío
 if df_completo is not None and not df_completo.empty:
     df_completo = df_completo[df_completo['Región Natural'].notna()]
 
-# =====================================================================
-# 4. MENÚ LATERAL INTERACTIVO
-# =====================================================================
+#MENÚ LATERAL INTERACTIVO
 with st.sidebar:
     st.title("🌱 Huella Ecológica")
     st.caption("Datos oficiales del Ministerio del Ambiente")
     st.markdown("---")
-    seccion = st.radio(
-        "Selecciona una sección:",
-        ["Resumen del Proyecto", "Análisis General por Año", "Zoom por Departamento", "Visualización Avanzada de Datos"]
-    )
+    seccion = st.radio("Selecciona una sección:", ["Resumen del Proyecto", "Análisis General por Año", "Zoom por Departamento",
+                                                   "Visualización Avanzada de Datos"])
 
-# =====================================================================
-# 5. CONTROL DE LAS VISTAS SEGÚN LA SECCIÓN SELECCIONADA
-# =====================================================================
+#CONTROL DE LAS VISTAS SEGÚN LA SECCIÓN SELECCIONADA
 if df_completo is None or df_completo.empty:
     st.error("❌ No se pudieron procesar los datos de tus archivos CSV. Revisa los delimitadores y la ubicación de tus archivos.")
 else:
     
-    # --- SECCIÓN 1: RESUMEN DEL PROYECTO ---
+    #RESUMEN DEL PROYECTO
     if seccion == "Resumen del Proyecto":
         st.title("🌱 Eckoprint: Sistema de Gestión de Huella Ecológica")
         st.markdown("---")
@@ -183,24 +150,20 @@ else:
         col_texto, col_imagen = st.columns([2, 1])
         with col_texto:
             st.subheader("¿Qué es Eckoprint?")
-            st.write(
-                "Eckoprint es una plataforma interactiva diseñada para la visualización, "
-                "análisis y monitoreo de la **Huella Ecológica Regional en el Perú**. "
-                "A través de este sistema, transformamos los registros históricos del "
-                "**Ministerio del Ambiente (MINAM)** en información visual clave para "
-                "entender nuestro impacto en el territorio."
-            )
+            st.write( "Eckoprint es una plataforma interactiva diseñada para la visualización, "
+                     "análisis y monitoreo de la **Huella Ecológica Regional en el Perú**. "
+                     "A través de este sistema, transformamos los registros históricos del "
+                     "**Ministerio del Ambiente (MINAM)** en información visual clave para "
+                     "entender nuestro impacto en el territorio.")
         with col_imagen:
             st.image("https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=500", caption="Sostenibilidad Regional", use_container_width=True)
 
         st.markdown("---")
         st.markdown("### 🎯 Objetivo del Estudio")
-        st.info(
-            "**Evaluar de manera evolutiva y geoespacial el índice de Huella Ecológica Per Cápita** "
-            "en los diferentes departamentos del Perú entre los años 2009 y 2016. Con esto, buscamos "
-            "identificar qué regiones presentan un consumo de recursos por encima de su biocapacidad "
-            "y promover estrategias de ecoeficiencia local."
-        )
+        st.info("**Evaluar de manera evolutiva y geoespacial el índice de Huella Ecológica Per Cápita** "
+                "en los diferentes departamentos del Perú entre los años 2009 y 2016. Con esto, buscamos "
+                "identificar qué regiones presentan un consumo de recursos por encima de su biocapacidad "
+                "y promover estrategias de ecoeficiencia local.")
 
         st.markdown("---")
         st.markdown("### 📊 Indicadores Históricos Nacionales (2009 - 2016)")
@@ -228,20 +191,16 @@ else:
         
         with col_grafica:
             df_pie = df_completo.groupby("Región Natural", as_index=False)["Valor"].sum()
-            fig = px.pie(
-                df_pie, values='Valor', names='Región Natural', hole=0, 
-                color='Región Natural', color_discrete_map={'Costa': '#3b82f6', 'Sierra': '#8b5a2b', 'Selva': '#38a169'}
-            )
+            fig = px.pie(df_pie, values='Valor', names='Región Natural', hole=0, color='Región Natural',
+                         color_discrete_map={'Costa': '#3b82f6', 'Sierra': '#8b5a2b', 'Selva': '#38a169'})
             fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=16)
             fig.update_layout(showlegend=False, margin=dict(t=20, b=20, l=20, r=20))
             st.plotly_chart(fig, use_container_width=True)
             
         with col_info_tabla:
             st.markdown("### 🔍 Interpretación del Impacto Macrorregional")
-            st.write(
-                "El gráfico circular revela una asimetría marcada en la distribución de la carga ambiental a nivel nacional, "
-                "permitiendo identificar los focos prioritarios de intervención:"
-            )
+            st.write("El gráfico circular revela una asimetría marcada en la distribución de la carga ambiental a nivel nacional, "
+                     "permitiendo identificar los focos prioritarios de intervención:")
             total_valores = df_pie["Valor"].sum()
             pct_costa = (df_pie[df_pie["Región Natural"] == "Costa"]["Valor"].sum() / total_valores) * 100
             pct_sierra = (df_pie[df_pie["Región Natural"] == "Sierra"]["Valor"].sum() / total_valores) * 100
@@ -258,7 +217,7 @@ else:
             df_porcentaje = df_porcentaje[['Costa', 'Selva', 'Sierra']]
             st.dataframe(df_porcentaje.style.format("{:.1f}%"), use_container_width=True)
 
-    # --- SECCIÓN 2: ANÁLISIS GENERAL POR AÑO ---
+    #ANÁLISIS GENERAL POR AÑO
     elif seccion == "Análisis General por Año":
         st.title("📈 Análisis General y Comparativa de Componentes")
         st.markdown("---")
@@ -281,11 +240,8 @@ else:
             componentes_disponibles = [c for c in df_anio.columns if c not in columnas_fijas]
             
             if componentes_disponibles:
-                componentes_elegidos = st.multiselect(
-                    "Selecciona los componentes que deseas visualizar y contrastar:", 
-                    options=componentes_disponibles, 
-                    default=componentes_disponibles[:3]
-                )
+                componentes_elegidos = st.multiselect("Selecciona los componentes que deseas visualizar y contrastar:",
+                                                      options=componentes_disponibles, default=componentes_disponibles[:3])
                 if componentes_elegidos:
                     st.bar_chart(df_anio.set_index("Departamento")[componentes_elegidos])
             else:
@@ -295,7 +251,7 @@ else:
             st.subheader(f"Base de Datos Completa - Año {anio_seleccionado}")
             st.dataframe(df_anio.drop(columns=['Ámbito', 'Valor'], errors='ignore'))
 
-    # --- SECCIÓN 3: ZOOM POR DEPARTAMENTO (Código fusionado previo sin Gráfico de Torta) ---
+    #ZOOM POR DEPARTAMENTO
     elif seccion == "Zoom por Departamento":
         st.title("🗺️ Análisis Macrorregional y Departamental de la Huella Ecológica")
         st.write("Esta sección desglosa los datos históricos de tu carpeta para mostrar el comportamiento de cada departamento agrupado por su región natural.")
@@ -359,9 +315,7 @@ else:
                 else:
                     st.warning(f"No hay suficientes datos temporales para mapear la región {nombre_reg}.")
 
-    # =====================================================================
-    # NUEVA INTEGRACIÓN --- SECCIÓN 4: VISUALIZACIÓN AVANZADA DE DATOS ---
-    # =====================================================================
+    #VISUALIZACIÓN AVANZADA DE DATOS
     elif seccion == "Visualización Avanzada de Datos":
         st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2026)")
         st.write("Analiza y compara la evolución de la huella regional per cápita y sus componentes.")
@@ -371,26 +325,18 @@ else:
         
         with col_filtro1:
             regiones_disponibles = sorted(df_completo['Ámbito'].dropna().unique())
-            regiones_seleccionadas = st.multiselect(
-                "Selecciona las regiones a comparar:",
-                options=regiones_disponibles,
-                default=[regiones_disponibles[0]] if regiones_disponibles else []
-            )
+            regiones_seleccionadas = st.multiselect("Selecciona las regiones a comparar:", options=regiones_disponibles,
+                                                    default=[regiones_disponibles[0]] if regiones_disponibles else [])
             
         with col_filtro2:
-            columnas_graficables = [
-                'Huella Regional Per Capita', 'Área de Cultivos', 
-                'Área de Pastoreo', 'Área de Bosques', 
-                'Zonas de Pesca', 'Huella de Carbono', 'Áreas Urbanas'
-            ]
+            columnas_graficables = ['Huella Regional Per Capita', 'Área de Cultivos',
+                                    'Área de Pastoreo', 'Área de Bosques',
+                                    'Zonas de Pesca', 'Huella de Carbono', 'Áreas Urbanas']
             columnas_disponibles = [col for col in columnas_graficables if col in df_completo.columns]
             if not columnas_disponibles:
                 columnas_disponibles = [col for col in df_completo.columns if col not in ['Ámbito', 'Año', 'Departamento', 'Valor', 'Región Natural']]
 
-            componente_seleccionado = st.selectbox(
-                "Selecciona la variable a graficar (Zonas de Pesca, Carbono, etc.):", 
-                columnas_disponibles
-            )
+            componente_seleccionado = st.selectbox("Selecciona la variable a graficar (Zonas de Pesca, Carbono, etc.):", columnas_disponibles)
 
         st.markdown("---")
 
@@ -428,10 +374,8 @@ else:
 
         st.markdown("---")
         st.subheader("Desglose Completo por Año")
-        anio_seleccionado = st.slider(
-            "Arrastra para cambiar el año de la tabla inferior:", 
-            int(df_completo['Año'].min()), int(df_completo['Año'].max()), int(df_completo['Año'].min())
-        )
+        anio_seleccionado = st.slider("Arrastra para cambiar el año de la tabla inferior:",
+                                      int(df_completo['Año'].min()), int(df_completo['Año'].max()), int(df_completo['Año'].min()))
         
         df_anio_vis = df_completo[df_completo['Año'] == anio_seleccionado].drop(columns=['Año', 'Departamento', 'Valor', 'Región Natural'], errors='ignore')
         st.dataframe(df_anio_vis.set_index('Ámbito'), use_container_width=True)
