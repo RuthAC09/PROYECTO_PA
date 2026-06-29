@@ -5,14 +5,7 @@ import streamlit as st
 import plotly.express as px
 import matplotlib.pyplot as plt
 
-# =====================================================================
-# 1. CONFIGURACIÓN DE LA INTERFAZ DE LA PÁGINA
-# =====================================================================
-st.set_page_config(
-    page_title="Huella Ecológica Regional - MINAM",
-    page_icon="🌱",
-    layout="wide"
-)
+st.set_page_config(page_title="Huella Ecológica Regional - MINAM", page_icon="🌱", layout="wide")
 
 # =====================================================================
 # 2. DICCIONARIOS Y FUNCIONES DE SOPORTE
