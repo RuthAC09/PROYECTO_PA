@@ -50,7 +50,7 @@ def limpiar_texto(texto):
 # =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    archivos_csv = glob.glob(".csv")
+    archivos_csv = glob.glob("*.csv")
     if not archivos_csv:
         return None
         
