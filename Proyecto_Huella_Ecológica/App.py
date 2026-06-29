@@ -5,13 +5,35 @@ import streamlit as st
 import plotly.express as px
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Huella Ecológica Regional - MINAM", page_icon="🌱", layout="wide")
+# =====================================================================
+# 1. CONFIGURACIÓN DE LA INTERFAZ DE LA PÁGINA
+# =====================================================================
+st.set_page_config(
+    page_title="Huella Ecológica Regional - MINAM",
+    page_icon="🌱",
+    layout="wide"
+)
 
-REGIONES_PERU = {'TUMBES': 'Costa', 'PIURA': 'Costa', 'LAMBAYEQUE': 'Costa', 'LA LIBERTAD': 'Costa', 'ANCASH': 'Costa', 'LIMA': 'Costa',
-                 'ICA': 'Costa', 'AREQUIPA': 'Costa', 'MOQUEGUA': 'Costa', 'TACNA': 'Costa', 'CAJAMARCA': 'Sierra', 'PASCO': 'Sierra',
-                 'JUNIN': 'Sierra', 'HUANUCO': 'Sierra', 'HUANCAVELICA': 'Sierra', 'AYACUCHO': 'Sierra', 'APURIMAC': 'Sierra',
-                 'CUSCO': 'Sierra', 'PUNO': 'Sierra', 'LORETO': 'Selva', 'AMAZONAS': 'Selva', 'SAN MARTIN': 'Selva', 'UCAYALI': 'Selva',
-                 'MADRE DE DIOS': 'Selva'}
+# =====================================================================
+# 2. DICCIONARIOS Y FUNCIONES DE SOPORTE
+# =====================================================================
+# Sin Callao por no ser departamento conforme a lo solicitado
+REGIONES_PERU = {
+    # COSTA
+    'TUMBES': 'Costa', 'PIURA': 'Costa', 'LAMBAYEQUE': 'Costa', 
+    'LA LIBERTAD': 'Costa', 'ANCASH': 'Costa', 'LIMA': 'Costa', 
+    'ICA': 'Costa', 'AREQUIPA': 'Costa', 'MOQUEGUA': 'Costa', 
+    'TACNA': 'Costa',
+    
+    # SIERRA
+    'CAJAMARCA': 'Sierra', 'PASCO': 'Sierra', 'JUNIN': 'Sierra', 
+    'HUANUCO': 'Sierra', 'HUANCAVELICA': 'Sierra', 'AYACUCHO': 'Sierra', 
+    'APURIMAC': 'Sierra', 'CUSCO': 'Sierra', 'PUNO': 'Sierra',
+    
+    # SELVA
+    'LORETO': 'Selva', 'AMAZONAS': 'Selva', 'SAN MARTIN': 'Selva', 
+    'UCAYALI': 'Selva', 'MADRE DE DIOS': 'Selva'
+}
 
 def limpiar_texto(texto):
     if pd.isna(texto):
@@ -23,14 +45,13 @@ def limpiar_texto(texto):
         texto = texto.replace(original, reemplazo)
     return texto
 
+# =====================================================================
+# 3. CARGA Y CONSOLIDACIÓN DE DATOS REFORZADA (CACHEADA)
+# =====================================================================
 @st.cache_data
 def cargar_datos_detallados():
-    ruta_script = os.path.dirname(os.path.abspath(__file__))
-    patron_csv = os.path.join(ruta_script, "*.csv")
-    archivos_csv = glob.glob(patron_csv)
-    
+    archivos_csv = glob.glob("*.csv")
     if not archivos_csv:
-        st.sidebar.error(f"⚠️ No se encontraron archivos .csv en: {ruta_script}")
         return None
         
     datos_historicos = []
@@ -92,45 +113,34 @@ def cargar_datos_detallados():
         df_columnas_validas = ['Ámbito'] + [c for c in nuevos_columnas.values() if c in df.columns]
         df = df[df_columnas_validas].copy()
         
-        # --- LIMPIEZA NUMÉRICA MEJORADA ---
         for col in df.columns:
             if col != 'Ámbito':
-                df[col] = df[col].astype(str).str.replace(r'[^\d.,-]', '', regex=True).str.strip()
-                df[col] = df[col].str.replace(',', '.', regex=False)
+                if df[col].dtype == 'object':
+                    df[col] = df[col].astype(str).str.replace(',', '.', regex=False).str.strip()
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
         df = df.groupby('Ámbito', as_index=False).first()
-        df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
         
-        if 'Huella Regional Per Capita' in df.columns:
-            df['Valor'] = df['Huella Regional Per Capita']
-        elif len(df.columns) >  1:
-            # Si no encontró la columna por nombre, toma la primera numérica disponible
-            df['Valor'] = df.iloc[:, 1]
-        else:
-            df['Valor'] = np.nan
-
+        # Adaptación para compatibilidad entre las secciones antiguas y nuevas
+        df['Departamento'] = df['Ámbito'].apply(limpiar_texto)
+        df['Valor'] = df['Huella Regional Per Capita'] if 'Huella Regional Per Capita' in df.columns else df.iloc[:, 1]
         df['Año'] = anio
         df['Región Natural'] = df['Departamento'].map(REGIONES_PERU)
         
-        if not df['Valor'].isna().all():
-            datos_historicos.append(df)
+        datos_historicos.append(df)
         
     if not datos_historicos:
         return None
     return pd.concat(datos_historicos, ignore_index=True)
 
-df_completo = None
-
-try:
-    df_completo = cargar_datos_detallados()
-except Exception as e:
-    st.sidebar.error(f"❌ Error crítico al invocar la función de carga: {e}")
+df_completo = cargar_datos_detallados()
 
 if df_completo is not None and not df_completo.empty:
     df_completo = df_completo[df_completo['Región Natural'].notna()]
 
-# MENÚ LATERAL INTERACTIVO
+# =====================================================================
+# 4. MENÚ LATERAL INTERACTIVO
+# =====================================================================
 with st.sidebar:
     st.title("🌱 Huella Ecológica")
     st.caption("Datos oficiales del Ministerio del Ambiente")
@@ -140,12 +150,14 @@ with st.sidebar:
         ["Resumen del Proyecto", "Análisis General por Año", "Zoom por Departamento", "Visualización Avanzada de Datos"]
     )
 
-# CONTROL DE LAS VISTAS SEGÚN LA SECCIÓN SELECCIONADA
+# =====================================================================
+# 5. CONTROL DE LAS VISTAS SEGÚN LA SECCIÓN SELECCIONADA
+# =====================================================================
 if df_completo is None or df_completo.empty:
     st.error("❌ No se pudieron procesar los datos de tus archivos CSV. Revisa los delimitadores y la ubicación de tus archivos.")
 else:
     
-    # RESUMEN DEL PROYECTO
+    # --- SECCIÓN 1: RESUMEN DEL PROYECTO ---
     if seccion == "Resumen del Proyecto":
         st.title("🌱 Eckoprint: Sistema de Gestión de Huella Ecológica")
         st.markdown("---")
@@ -228,7 +240,7 @@ else:
             df_porcentaje = df_porcentaje[['Costa', 'Selva', 'Sierra']]
             st.dataframe(df_porcentaje.style.format("{:.1f}%"), use_container_width=True)
 
-    # ANÁLISIS GENERAL POR AÑO
+    # --- SECCIÓN 2: ANÁLISIS GENERAL POR AÑO ---
     elif seccion == "Análisis General por Año":
         st.title("📈 Análisis General y Comparativa de Componentes")
         st.markdown("---")
@@ -265,7 +277,7 @@ else:
             st.subheader(f"Base de Datos Completa - Año {anio_seleccionado}")
             st.dataframe(df_anio.drop(columns=['Ámbito', 'Valor'], errors='ignore'))
 
-    # ZOOM POR DEPARTAMENTO
+    # --- SECCIÓN 3: ZOOM POR DEPARTAMENTO (Código fusionado previo sin Gráfico de Torta) ---
     elif seccion == "Zoom por Departamento":
         st.title("🗺️ Análisis Macrorregional y Departamental de la Huella Ecológica")
         st.write("Esta sección desglosa los datos históricos de tu carpeta para mostrar el comportamiento de cada departamento agrupado por su región natural.")
@@ -329,9 +341,11 @@ else:
                 else:
                     st.warning(f"No hay suficientes datos temporales para mapear la región {nombre_reg}.")
 
-    # VISUALIZACIÓN AVANZADA DE DATOS
+    # =====================================================================
+    # NUEVA INTEGRACIÓN --- SECCIÓN 4: VISUALIZACIÓN AVANZADA DE DATOS ---
+    # =====================================================================
     elif seccion == "Visualización Avanzada de Datos":
-        st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2016)")
+        st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2026)")
         st.write("Analiza y compara la evolución de la huella regional per cápita y sus componentes.")
         
         st.markdown("### 🛠️ Parámetros de Selección")
