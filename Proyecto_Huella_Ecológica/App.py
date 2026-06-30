@@ -31,7 +31,7 @@ def cargar_datos_detallados():
     archivos_csv = glob.glob(patron_csv)
     
     if not archivos_csv:
-        st.sidebar.error(f"⚠️ No se encontraron archivos .csv en: {ruta_script}")
+        st.sidebar.error(f"No se encontraron archivos .csv en: {ruta_script}")
         return None
         
     datos_historicos = []
@@ -125,7 +125,7 @@ df_completo = None
 try:
     df_completo = cargar_datos_detallados()
 except Exception as e:
-    st.sidebar.error(f"❌ Error crítico al invocar la función de carga: {e}")
+    st.sidebar.error(f"Error crítico al invocar la función de carga: {e}")
 
 if df_completo is not None and not df_completo.empty:
     df_completo = df_completo[df_completo['Región Natural'].notna()]
@@ -140,7 +140,7 @@ with st.sidebar:
 
 #CONTROL DE LAS VISTAS SEGÚN LA SECCIÓN SELECCIONADA
 if df_completo is None or df_completo.empty:
-    st.error("❌ No se pudieron procesar los datos de tus archivos CSV. Revisa los delimitadores y la ubicación de tus archivos.")
+    st.error("No se pudieron procesar los datos de tus archivos CSV. Revisa los delimitadores y la ubicación de tus archivos.")
 else:
     
     #RESUMEN DEL PROYECTO
@@ -167,7 +167,7 @@ else:
                 "y promover estrategias de ecoeficiencia local.")
 
         st.markdown("---")
-        st.markdown("### 📊 Indicadores Históricos Nacionales (2009 - 2016)")
+        st.markdown("### Indicadores Históricos Nacionales (2009 - 2016)")
         
         df_historico_nacional = df_completo.groupby("Año", as_index=False)["Valor"].mean()
         df_historico_nacional.rename(columns={"Valor": "Huella Promedio Nacional (Hag)"}, inplace=True)
@@ -199,7 +199,7 @@ else:
             st.plotly_chart(fig, use_container_width=True)
             
         with col_info_tabla:
-            st.markdown("### 🔍 Interpretación del Impacto Macrorregional")
+            st.markdown("### Interpretación del Impacto Macrorregional")
             st.write("El gráfico circular revela una asimetría marcada en la distribución de la carga ambiental a nivel nacional, "
                      "permitiendo identificar los focos prioritarios de intervención:")
             total_valores = df_pie["Valor"].sum()
@@ -207,12 +207,12 @@ else:
             pct_sierra = (df_pie[df_pie["Región Natural"] == "Sierra"]["Valor"].sum() / total_valores) * 100
             pct_selva = (df_pie[df_pie["Región Natural"] == "Selva"]["Valor"].sum() / total_valores) * 100
             
-            st.markdown(f"• 🌊 **Región Costa ({pct_costa:.1f}% acumulado):** Concentra la mayor carga debido a la densidad urbana e industrial.")
-            st.markdown(f"• 🏔️ **Región Sierra ({pct_sierra:.1f}% acumulado):** Mantiene una participación intermedia vinculada a la dispersión demográfica.")
-            st.markdown(f"• 🌳 **Región Selva ({pct_selva:.1f}% acumulado):** Presenta la menor incidencia histórica.")
+            st.markdown(f"• **Región Costa ({pct_costa:.1f}% acumulado):** Concentra la mayor carga debido a la densidad urbana e industrial.")
+            st.markdown(f"• **Región Sierra ({pct_sierra:.1f}% acumulado):** Mantiene una participación intermedia vinculada a la dispersión demográfica.")
+            st.markdown(f"• **Región Selva ({pct_selva:.1f}% acumulado):** Presenta la menor incidencia histórica.")
             
             st.markdown("---")
-            st.markdown("### 📅 Desglose de Participación por Año (%)")
+            st.markdown("### Desglose de Participación por Año (%)")
             df_tabla_reg = df_completo.groupby(["Año", "Región Natural"])["Valor"].sum().unstack()
             df_porcentaje = df_tabla_reg.div(df_tabla_reg.sum(axis=1), axis=0) * 100
             df_porcentaje = df_porcentaje[['Costa', 'Selva', 'Sierra']]
@@ -220,7 +220,7 @@ else:
 
     #ANÁLISIS GENERAL POR AÑO
     elif seccion == "Análisis General por Año":
-        st.title("📈 Análisis General y Comparativa de Componentes")
+        st.title("Análisis General y Comparativa de Componentes")
         st.markdown("---")
         
         lista_anios = sorted(df_completo["Año"].unique())
@@ -228,7 +228,7 @@ else:
         
         df_anio = df_completo[df_completo["Año"] == anio_seleccionado].sort_values(by="Valor", ascending=False)
         
-        tab1, tab2 = st.tabs(["📊 Gráficos de Impacto", "📄 Tabla de Datos Completos"])
+        tab1, tab2 = st.tabs(["Gráficos de Impacto", "Tabla de Datos Completos"])
         
         with tab1:
             st.subheader(f"Huella Regional Per Cápita Total - Año {anio_seleccionado}")
@@ -254,17 +254,17 @@ else:
 
     #ZOOM POR DEPARTAMENTO
     elif seccion == "Zoom por Departamento":
-        st.title("🗺️ Análisis Macrorregional y Departamental de la Huella Ecológica")
+        st.title("Análisis Macrorregional y Departamental de la Huella Ecológica")
         st.write("Esta sección desglosa los datos históricos de tu carpeta para mostrar el comportamiento de cada departamento agrupado por su región natural.")
 
         st.markdown("---")
         df_deptos = df_completo.groupby(['Región Natural', 'Departamento'], as_index=False)['Valor'].mean()
         df_deptos = df_deptos.sort_values(by=['Región Natural', 'Valor'], ascending=[True, False])
 
-        st.subheader("📊 Análisis Descriptivo: Departamentos dentro de cada Región Natural")
+        st.subheader("Análisis Descriptivo: Departamentos dentro de cada Región Natural")
         st.write("A continuación se muestra el aporte de cada departamento ordenado de mayor a menor impacto dentro de su respectiva zona geográfica:")
 
-        tab1, tab2, tab3 = st.tabs(["🌊 Costa", "🏔️ Sierra", "🌳 Selva"])
+        tab1, tab2, tab3 = st.tabs(["Costa", "Sierra", "Selva"])
         regiones_tabs = [("Costa", tab1, '#4A90E2'), ("Sierra", tab2, '#8B572A'), ("Selva", tab3, '#417505')]
 
         for nombre_reg, tab, color_graf in regiones_tabs:
@@ -289,10 +289,10 @@ else:
                     st.warning(f"No se encontraron datos para la región {nombre_reg}.")
 
         st.markdown("---")
-        st.subheader("📈 Evolución Temporal de todos los Departamentos según su Región")
+        st.subheader("Evolución Temporal de todos los Departamentos según su Región")
         st.write("A continuación se presentan las tendencias históricas (2009-2016) desglosadas por cada macro-región natural:")
 
-        tab_lineas_costa, tab_lineas_sierra, tab_lineas_selva = st.tabs(["🌊 Líneas Costa", "🏔️ Líneas Sierra", "🌳 Líneas Selva"])
+        tab_lineas_costa, tab_lineas_sierra, tab_lineas_selva = st.tabs(["Líneas Costa", "Líneas Sierra", "Líneas Selva"])
         config_lineas = [("Costa", tab_lineas_costa), ("Sierra", tab_lineas_sierra), ("Selva", tab_lineas_selva)]
 
         for nombre_reg, tab_destino in config_lineas:
