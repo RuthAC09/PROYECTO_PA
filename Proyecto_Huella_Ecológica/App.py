@@ -318,10 +318,10 @@ else:
 
     #VISUALIZACIÓN AVANZADA DE DATOS
     elif seccion == "Visualización Avanzada de Datos":
-        st.title("📊 Visualización de datos: Huella Ecológica por Región (2009 - 2026)")
+        st.title("Visualización de datos: Huella Ecológica por Región (2009 - 2026)")
         st.write("Analiza y compara la evolución de la huella regional per cápita y sus componentes.")
         
-        st.markdown("### 🛠️ Parámetros de Selección")
+        st.markdown("### Parámetros de Selección")
         col_filtro1, col_filtro2 = st.columns(2)
         
         with col_filtro1:
